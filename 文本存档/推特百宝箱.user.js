@@ -2401,6 +2401,24 @@ const Main = {
 
 
 
+        // 仅推文详情页执行清理，
+        // 首页/时间线不自动滚动不屏蔽
+
+        if(
+            !this.isStatusPage()
+        ){
+
+            log(
+                "非推文详情页，跳过扫描"
+            );
+
+            return;
+
+        }
+
+
+
+
         try{
 
 
@@ -2613,6 +2631,24 @@ const Main = {
 
 
 
+
+
+
+
+    /**
+     * 判断是否为推文详情页
+     *
+     * URL 形如 /xxx/status/123456
+     */
+    isStatusPage(){
+
+
+        return /\/status\/\d+/.test(
+            location.pathname
+        );
+
+
+    },
 
 
 
