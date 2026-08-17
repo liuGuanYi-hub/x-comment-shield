@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         推特百宝箱 - X 评论盾牌
 // @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
-// @version      1.7.0
+// @version      1.7.1
 // @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
 // @author       liuGuanYi-hub
 // @match        https://twitter.com/*
@@ -393,7 +393,20 @@ const CommentScanner = {
     scan(){
 
 
-        const result=[];
+                // 先展开所有长推文（点"显示更多"），
+        // 避免 X 截断导致关键词匹配失败
+
+        const showMores =
+            document.querySelectorAll(
+                '[data-testid="tweet-text-show-more-link"]'
+            );
+
+        for(const btn of showMores){
+            try{ btn.click(); }catch(e){}
+        }
+
+
+const result=[];
 
 
 
