@@ -34,7 +34,7 @@
 ### 安装步骤
 1. 打开脚本安装地址：
    ```
-   https://raw.githubusercontent.com/liuGuanYi-hub/x-comment-shield/main/%E6%96%87%E6%9C%AC%E5%AD%98%E6%A1%A3/%E6%8E%A8%E7%89%B9%E7%99%BE%E5%AE%9D%E7%AE%B1.user.js
+   https://raw.githubusercontent.com/liuGuanYi-hub/x-comment-shield/main/%E6%8E%A8%E7%89%B9%E7%99%BE%E5%AE%9D%E7%AE%B1.user.js
    ```
 2. Tampermonkey 自动弹出安装页，点击「安装」
 3. 打开 [X (Twitter)](https://x.com)，页面右下角出现 🛡️ 悬浮按钮即安装成功
