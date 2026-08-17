@@ -1468,6 +1468,68 @@ const UI = {
 
 
 
+
+        .txtool-header{
+
+            display:flex;
+
+            align-items:center;
+
+            justify-content:space-between;
+
+            gap:8px;
+
+        }
+
+
+
+
+        .txtool-header h3{
+
+            margin:0;
+
+            flex:1;
+
+        }
+
+
+
+
+        .txtool-minimize{
+
+            background:transparent;
+
+            border:none;
+
+            color:#aaa;
+
+            font-size:22px;
+
+            font-weight:500;
+
+            cursor:pointer;
+
+            padding:0 6px;
+
+            line-height:1;
+
+            border-radius:4px;
+
+        }
+
+
+
+
+        .txtool-minimize:hover{
+
+            color:#fff;
+
+            background:rgba(255,255,255,0.1);
+
+        }
+
+
+
         `);
 
 
@@ -2240,6 +2302,21 @@ const UI = {
      * 绑定事件
      */
     bindEvents(){
+
+
+
+        document
+        .querySelector(
+            "#txt-minimize"
+        )
+        .onclick=()=>{
+
+
+            this.closePanel();
+
+
+        };
+
 
 
 
