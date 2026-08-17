@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         推特百宝箱 - X 评论盾牌
 // @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
-// @version      1.6.3
+// @version      1.7.0
 // @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
 // @author       liuGuanYi-hub
 // @match        https://twitter.com/*
@@ -40,6 +40,14 @@ const DEFAULT_CONFIG = {
 
     // 折叠左侧栏（可选，默认不折叠）
     collapseLeftSidebar: false,
+
+
+    // 隐藏广告推文（Promoted/Sponsored 徽标）
+    hideAds: false,
+
+
+    // 移除干扰区块（谁去关注/你可能喜欢等）
+    hideDistractions: false,
 
 
     // 扫描次数
@@ -1284,6 +1292,13 @@ const UI = {
         this.applyLeftSidebar();
 
 
+
+
+        // 应用功能板块
+
+        this.applyFeedCleaner();
+
+
     },
 
 
@@ -2164,6 +2179,233 @@ const UI = {
 
     },
 
+    /**
+     * 应用功能板块
+     *
+     * 广告徽标检测 + 干扰区块移除
+     */
+    applyFeedCleaner(){
+
+
+        // 广告徽标检测
+
+        if(
+            Config.get(
+                "hideAds"
+            )
+        ){
+
+
+            const ads =
+                document.querySelectorAll(
+                    '[data-testid="tweet"]'
+                );
+
+
+            for(
+                const article of ads
+            ){
+
+
+                if(
+                    article.dataset.adChecked
+                ){
+
+                    continue;
+
+                }
+
+
+                article.dataset.adChecked =
+                    "1";
+
+
+                const text =
+                    article.innerText
+                    ||
+                    "";
+
+
+                // 广告标记词
+
+                const adMarkers = [
+                    "Promoted",
+                    "Sponsored",
+                    "推荐",
+                    "广告",
+                    "推广",
+                    "赞助"
+                ];
+
+
+                const isAd =
+                    adMarkers.some(
+                        m=>text.includes(m)
+                    );
+
+
+                if(isAd){
+
+
+                    article.style.display =
+                        "none";
+
+
+                    log(
+                        "隐藏广告推文"
+                    );
+
+
+                }
+
+
+            }
+
+
+        }
+
+
+
+
+        // 干扰区块移除
+
+        if(
+            Config.get(
+                "hideDistractions"
+            )
+        ){
+
+
+            // 谁去关注
+
+            const whoToFollow =
+                document.querySelector(
+                    '[aria-label="Who to follow"], aside[aria-label="who to follow"]'
+                );
+
+
+            if(whoToFollow){
+
+                whoToFollow.style.display =
+                    "none";
+
+            }
+
+
+
+
+            // 你可能喜欢
+
+            const youMightLike =
+                document.querySelector(
+                    '[aria-label="You might like"], aside[aria-label="you might like"]'
+                );
+
+
+            if(youMightLike){
+
+                youMightLike.style.display =
+                    "none";
+
+            }
+
+
+
+
+            // 正在发生 / 趋势
+
+            const trends =
+                document.querySelector(
+                    '[data-testid="trend"]'
+                );
+
+
+            if(trends){
+
+                trends.style.display =
+                    "none";
+
+            }
+
+
+
+
+            // 查看更多推文
+
+            const buttons =
+                document.querySelectorAll(
+                    '[data-testid="cellInnerDiv"] div[role="button"]'
+                );
+
+
+            for(
+                const btn of buttons
+            ){
+
+
+                if(
+                    btn.innerText
+                    &&
+                    btn.innerText.includes(
+                        "查看更多"
+                    )
+                ){
+
+                    const cell =
+                        btn.closest(
+                            '[data-testid="cellInnerDiv"]'
+                        );
+
+
+                    if(cell){
+
+                        cell.style.display =
+                            "none";
+
+                    }
+
+                }
+
+
+            }
+
+
+        }
+
+
+
+
+        // 持续监听，
+        // X 是 SPA 动态加载
+
+        if(
+            !this._feedCleanerObserver
+        ){
+
+            this._feedCleanerObserver =
+                new MutationObserver(
+                    ()=>{
+
+                        this.applyFeedCleaner();
+
+                    }
+                );
+
+
+            this._feedCleanerObserver.observe(
+                document.body,
+                {
+                    childList:true,
+                    subtree:true
+                }
+            );
+
+        }
+
+
+    },
+
+
 
 
 
@@ -2329,6 +2571,46 @@ const UI = {
         >
 
         </label>
+
+
+
+
+        <hr>
+
+
+
+        <b>
+        功能板块
+        </b>
+
+
+
+
+        <label>
+
+        隐藏广告推文:
+
+        <input 
+        id="txt-hideads"
+        type="checkbox"
+        >
+
+        </label>
+
+
+
+
+        <label>
+
+        移除干扰区块:
+
+        <input 
+        id="txt-hidedist"
+        type="checkbox"
+        >
+
+        </label>
+
 
 
 
@@ -2652,6 +2934,30 @@ const UI = {
 
 
 
+        document
+        .querySelector(
+            "#txt-hideads"
+        )
+        .checked =
+        Config.get(
+            "hideAds"
+        );
+
+
+
+
+        document
+        .querySelector(
+            "#txt-hidedist"
+        )
+        .checked =
+        Config.get(
+            "hideDistractions"
+        );
+
+
+
+
 
         document
         .querySelector(
@@ -2804,6 +3110,36 @@ const UI = {
 
             Config.set(
 
+                "hideAds",
+
+                document
+                .querySelector(
+                    "#txt-hideads"
+                )
+                .checked
+
+            );
+
+
+
+
+            Config.set(
+
+                "hideDistractions",
+
+                document
+                .querySelector(
+                    "#txt-hidedist"
+                )
+                .checked
+
+            );
+
+
+
+
+            Config.set(
+
                 "blockKeywords",
 
                 document
@@ -2830,6 +3166,13 @@ const UI = {
             // 立即应用左侧栏折叠
 
             this.applyLeftSidebar();
+
+
+
+
+            // 立即应用功能板块
+
+            this.applyFeedCleaner();
 
 
 
