@@ -1,0 +1,2526 @@
+// ==UserScript==
+// @name         Twitter X Toolkit Local
+// @namespace    https://github.com/yourname/twitter-x-toolkit
+// @version      1.0.0
+// @description  X(Twitter) 评论管理工具 - 本地规则版
+// @author       YourName
+// @match        https://twitter.com/*
+// @match        https://x.com/*
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_addStyle
+// @grant        GM_registerMenuCommand
+// ==/UserScript==
+
+(function () {
+    'use strict';
+
+
+/**
+ * ==========================
+ * Config Module
+ * ==========================
+ */
+
+const DEFAULT_CONFIG = {
+
+    // 是否排除原作者
+    excludeOriginalPoster: true,
+
+
+    // 自动拉黑
+    autoBlock: false,
+
+
+    // 隐藏右侧栏
+    hideSidebar: true,
+
+
+    // 扫描次数
+    scanTimes: 5,
+
+
+    // 关键词黑名单
+    blockKeywords: [
+
+        "广告",
+        "抽奖",
+        "telegram",
+        "博彩",
+        "follow me"
+
+    ],
+
+
+    // 用户黑名单
+    blockedUsers: [],
+
+
+    // 自定义规则
+    customRules: [],
+
+
+    // 已处理记录
+    history: []
+
+};
+
+
+
+const Config = {
+
+
+    data: {},
+
+
+
+    init(){
+
+        const saved = GM_getValue(
+            "twitter_x_config",
+            {}
+        );
+
+
+        this.data = Object.assign(
+            {},
+            DEFAULT_CONFIG,
+            saved
+        );
+
+    },
+
+
+
+    get(key){
+
+        return this.data[key];
+
+    },
+
+
+
+    set(key,value){
+
+        this.data[key]=value;
+
+        this.save();
+
+    },
+
+
+
+    save(){
+
+        GM_setValue(
+            "twitter_x_config",
+            this.data
+        );
+
+    },
+
+
+    reset(){
+
+        this.data = structuredClone(
+            DEFAULT_CONFIG
+        );
+
+        this.save();
+
+    }
+
+
+};
+
+
+
+Config.init();
+
+
+
+/**
+ * ==========================
+ * 工具函数
+ * ==========================
+ */
+
+
+function sleep(ms){
+
+    return new Promise(
+        resolve=>setTimeout(resolve,ms)
+    );
+
+}
+
+
+
+function log(...args){
+
+    console.log(
+        "[TwitterXToolkit]",
+        ...args
+    );
+
+}
+
+/**
+ * ==========================
+ * Comment Scanner Module
+ * ==========================
+ */
+
+
+const CommentScanner = {
+
+
+    /**
+     * 获取当前页面所有推文节点
+     */
+    getTweets(){
+
+
+        return Array.from(
+            document.querySelectorAll(
+                'article[data-testid="tweet"]'
+            )
+        );
+
+
+    },
+
+
+
+    /**
+     * 获取单条推文信息
+     */
+    parseTweet(article){
+
+
+        try{
+
+
+            const textNode =
+                article.querySelector(
+                    '[data-testid="tweetText"]'
+                );
+
+
+            const text =
+                textNode
+                ?
+                textNode.innerText
+                :
+                "";
+
+
+
+            const userNode =
+                article.querySelector(
+                    'a[href^="/"][role="link"]'
+                );
+
+
+
+            let username = "";
+
+
+
+            if(userNode){
+
+                const href =
+                    userNode.getAttribute(
+                        "href"
+                    );
+
+
+                if(
+                    href &&
+                    href.startsWith("/")
+                ){
+
+                    username =
+                        href.split("/")[1];
+
+                }
+
+            }
+
+
+
+            const displayName =
+                this.getDisplayName(
+                    article
+                );
+
+
+
+            return {
+
+                element:article,
+
+                username,
+
+                displayName,
+
+                text,
+
+                url:
+                location.href
+
+
+            };
+
+
+
+        }
+        catch(e){
+
+
+            console.error(
+                "parse tweet error",
+                e
+            );
+
+
+            return null;
+
+        }
+
+
+    },
+
+
+
+
+
+    /**
+     * 获取显示名称
+     */
+    getDisplayName(article){
+
+
+        const nameNode =
+            article.querySelector(
+                '[data-testid="User-Name"]'
+            );
+
+
+        if(!nameNode){
+
+            return "";
+
+        }
+
+
+        return nameNode.innerText
+            .split("\n")[0]
+            .trim();
+
+
+    },
+
+
+
+
+
+    /**
+     * 判断是不是当前推文作者
+     */
+    isOriginalPoster(tweet){
+
+
+        const tweets =
+            this.getTweets();
+
+
+
+        if(
+            tweets.length===0
+        ){
+
+            return false;
+
+        }
+
+
+
+        const first =
+            this.parseTweet(
+                tweets[0]
+            );
+
+
+
+        if(!first){
+
+            return false;
+
+        }
+
+
+
+        return (
+            tweet.username ===
+            first.username
+        );
+
+
+    },
+
+
+
+
+
+    /**
+     * 扫描全部评论
+     */
+    scan(){
+
+
+        const result=[];
+
+
+
+        const tweets =
+            this.getTweets();
+
+
+
+        for(
+            const article of tweets
+        ){
+
+
+            const tweet =
+                this.parseTweet(
+                    article
+                );
+
+
+
+            if(!tweet){
+
+                continue;
+
+            }
+
+
+
+            // 排除原作者
+            if(
+                Config.get(
+                    "excludeOriginalPoster"
+                )
+                &&
+                this.isOriginalPoster(tweet)
+            ){
+
+                continue;
+
+            }
+
+
+
+            result.push(
+                tweet
+            );
+
+
+        }
+
+
+
+        log(
+            "扫描完成:",
+            result.length
+        );
+
+
+
+        return result;
+
+
+    },
+
+
+
+
+
+    /**
+     * 无限滚动加载评论
+     */
+    async scanWithScroll(){
+
+
+
+        let all=[];
+
+
+
+        const times =
+            Config.get(
+                "scanTimes"
+            );
+
+
+
+        for(
+            let i=0;
+            i<times;
+            i++
+        ){
+
+
+            const data =
+                this.scan();
+
+
+
+            all =
+                all.concat(
+                    data
+                );
+
+
+
+            window.scrollBy(
+                0,
+                window.innerHeight
+            );
+
+
+
+            await sleep(
+                1500
+            );
+
+
+        }
+
+
+
+        // 去重
+
+
+        const map =
+            new Map();
+
+
+
+        for(
+            const item of all
+        ){
+
+
+            const key =
+                item.username
+                +
+                item.text;
+
+
+
+            map.set(
+                key,
+                item
+            );
+
+
+        }
+
+
+
+        return Array.from(
+            map.values()
+        );
+
+
+
+    }
+
+
+};
+
+/**
+ * ==========================
+ * Matcher Module
+ * 规则匹配系统
+ * ==========================
+ */
+
+
+const Matcher = {
+
+
+    /**
+     * 检查文本是否包含关键词
+     */
+    matchKeyword(text){
+
+
+        if(!text){
+
+            return null;
+
+        }
+
+
+
+        const keywords =
+            Config.get(
+                "blockKeywords"
+            );
+
+
+
+        const lower =
+            text.toLowerCase();
+
+
+
+        for(
+            const keyword of keywords
+        ){
+
+
+            if(
+                lower.includes(
+                    keyword.toLowerCase()
+                )
+            ){
+
+                return {
+
+                    type:"keyword",
+
+                    value:keyword
+
+                };
+
+            }
+
+
+        }
+
+
+        return null;
+
+
+    },
+
+
+
+
+
+    /**
+     * 正则规则匹配
+     */
+    matchRegex(text){
+
+
+        if(!text){
+
+            return null;
+
+        }
+
+
+
+        const rules =
+            Config.get(
+                "customRules"
+            );
+
+
+
+        for(
+            const rule of rules
+        ){
+
+
+
+            try{
+
+
+                const reg =
+                    new RegExp(
+                        rule,
+                        "i"
+                    );
+
+
+
+                if(
+                    reg.test(text)
+                ){
+
+
+                    return {
+
+                        type:"regex",
+
+                        value:rule
+
+                    };
+
+
+                }
+
+
+
+            }
+            catch(e){
+
+
+                console.warn(
+                    "invalid regex",
+                    rule
+                );
+
+
+            }
+
+
+        }
+
+
+
+        return null;
+
+
+    },
+
+
+
+
+
+
+
+    /**
+     * 用户黑名单匹配
+     */
+    matchUser(username){
+
+
+
+        if(!username){
+
+            return null;
+
+        }
+
+
+
+        const users =
+            Config.get(
+                "blockedUsers"
+            );
+
+
+
+        if(
+            users.includes(
+                username
+            )
+        ){
+
+
+            return {
+
+
+                type:"user",
+
+
+                value:username
+
+
+            };
+
+
+        }
+
+
+
+        return null;
+
+
+    },
+
+
+
+
+
+
+
+    /**
+     * 检查历史处理记录
+     */
+    matchHistory(username){
+
+
+
+        const history =
+            Config.get(
+                "history"
+            );
+
+
+
+        return history.some(
+            item =>
+                item.username === username
+        );
+
+    },
+
+
+
+
+
+
+
+
+    /**
+     * 综合判断
+     */
+    check(tweet){
+
+
+
+        // 用户黑名单
+
+        const user =
+            this.matchUser(
+                tweet.username
+            );
+
+
+        if(user){
+
+            return user;
+
+        }
+
+
+
+
+
+        // 关键词
+
+        const keyword =
+            this.matchKeyword(
+                tweet.text
+            );
+
+
+
+        if(keyword){
+
+            return keyword;
+
+        }
+
+
+
+
+
+        // 正则
+
+        const regex =
+            this.matchRegex(
+                tweet.text
+            );
+
+
+
+        if(regex){
+
+            return regex;
+
+        }
+
+
+
+        return null;
+
+
+    },
+
+
+
+
+
+
+
+    /**
+     * 批量过滤
+     */
+    filter(tweets){
+
+
+
+        const result=[];
+
+
+
+        for(
+            const tweet of tweets
+        ){
+
+
+            const match =
+                this.check(
+                    tweet
+                );
+
+
+
+            if(match){
+
+
+                result.push({
+
+                    tweet,
+
+                    reason:match
+
+                });
+
+
+            }
+
+
+        }
+
+
+
+        return result;
+
+
+    }
+
+
+
+};
+
+/**
+ * ==========================
+ * Blocker Module
+ * 评论屏蔽执行
+ * ==========================
+ */
+
+
+const Blocker = {
+
+
+
+    /**
+     * 已处理缓存
+     */
+    processed:new Set(),
+
+
+
+
+
+
+    /**
+     * 获取唯一ID
+     */
+    getId(tweet){
+
+
+        return (
+
+            tweet.username
+            +
+            "_"
+            +
+            tweet.text.slice(0,50)
+
+        );
+
+
+    },
+
+
+
+
+
+
+
+    /**
+     * 隐藏评论 DOM
+     */
+    hide(tweet){
+
+
+        if(
+            !tweet.element
+        ){
+
+            return false;
+
+        }
+
+
+
+        try{
+
+
+            tweet.element.style.display =
+                "none";
+
+
+
+            tweet.element.dataset
+                .twitterToolkitHidden =
+                "true";
+
+
+
+            return true;
+
+
+        }
+        catch(e){
+
+
+            console.error(
+                "hide error",
+                e
+            );
+
+
+            return false;
+
+        }
+
+
+    },
+
+
+
+
+
+
+
+
+    /**
+     * 添加隐藏提示
+     */
+    replace(tweet,reason){
+
+
+
+        if(
+            !tweet.element
+        ){
+
+            return;
+
+        }
+
+
+
+
+        const div =
+            document.createElement(
+                "div"
+            );
+
+
+
+        div.innerHTML = `
+
+            <div
+            style="
+            padding:12px;
+            margin:8px;
+            border-radius:8px;
+            background:#222;
+            color:#aaa;
+            font-size:14px;
+            "
+            >
+
+            🚫 已隐藏评论
+
+            <br>
+
+            用户:
+            @${tweet.username}
+
+            <br>
+
+            原因:
+            ${reason.type}
+
+            (${reason.value})
+
+            </div>
+
+        `;
+
+
+
+        tweet.element.replaceWith(
+            div
+        );
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * 自动拉黑用户
+     *
+     * 默认关闭
+     */
+    async blockUser(username){
+
+
+
+        if(
+            !Config.get(
+                "autoBlock"
+            )
+        ){
+
+            return false;
+
+        }
+
+
+
+
+        /*
+            注意：
+
+            这里不直接调用 Twitter API
+
+            避免账号风险
+
+            后续可以增加：
+            手动确认按钮
+
+        */
+
+
+        log(
+            "需要拉黑:",
+            username
+        );
+
+
+
+        return false;
+
+
+    },
+
+
+
+
+
+
+
+
+    /**
+     * 保存处理记录
+     */
+    saveHistory(tweet,reason){
+
+
+
+        const history =
+            Config.get(
+                "history"
+            );
+
+
+
+        history.push({
+
+            username:
+            tweet.username,
+
+
+            text:
+            tweet.text.slice(
+                0,
+               100
+            ),
+
+
+            reason,
+
+
+            time:
+            Date.now()
+
+
+        });
+
+
+
+        // 限制数量
+
+        if(
+            history.length>500
+        ){
+
+            history.shift();
+
+        }
+
+
+
+        Config.set(
+            "history",
+            history
+        );
+
+
+    },
+
+
+
+
+
+
+
+    /**
+     * 执行单条屏蔽
+     */
+    execute(item){
+
+
+
+        const tweet =
+            item.tweet;
+
+
+
+        const id =
+            this.getId(
+                tweet
+            );
+
+
+
+        if(
+            this.processed.has(
+                id
+            )
+        ){
+
+            return;
+
+        }
+
+
+
+        this.processed.add(
+            id
+        );
+
+
+
+
+
+        // 隐藏
+
+        this.replace(
+
+            tweet,
+
+            item.reason
+
+        );
+
+
+
+
+
+        // 保存
+
+        this.saveHistory(
+
+            tweet,
+
+            item.reason
+
+        );
+
+
+
+
+
+        // 可选
+
+        this.blockUser(
+            tweet.username
+        );
+
+
+
+    },
+
+
+
+
+
+
+
+    /**
+     * 批量执行
+     */
+    executeAll(items){
+
+
+
+        for(
+            const item of items
+        ){
+
+
+            this.execute(
+                item
+            );
+
+
+        }
+
+
+
+        log(
+            "处理完成:",
+            items.length
+        );
+
+
+    }
+
+
+
+
+
+};
+
+/**
+ * ==========================
+ * UI Module
+ * 控制面板
+ * ==========================
+ */
+
+
+const UI = {
+
+
+
+    /**
+     * 初始化
+     */
+    init(){
+
+
+        this.injectStyle();
+
+
+        this.registerMenu();
+
+
+        this.createFloatingButton();
+
+
+        // 应用侧栏隐藏
+
+        this.applySidebar();
+
+
+    },
+
+
+
+
+
+
+    /**
+     * CSS
+     */
+    injectStyle(){
+
+
+        GM_addStyle(`
+
+
+        .txtool-panel{
+
+
+            position:fixed;
+
+            right:20px;
+
+            top:80px;
+
+            width:320px;
+
+            background:#111;
+
+            color:#eee;
+
+            border-radius:12px;
+
+            padding:16px;
+
+            z-index:999999;
+
+            font-size:14px;
+
+            box-shadow:
+            0 4px 20px rgba(0,0,0,.4);
+
+
+        }
+
+
+
+        .txtool-panel h3{
+
+            margin-top:0;
+
+        }
+
+
+
+
+        .txtool-btn{
+
+
+            width:100%;
+
+            margin-top:8px;
+
+            padding:8px;
+
+            border:none;
+
+            border-radius:8px;
+
+            cursor:pointer;
+
+            background:#1d9bf0;
+
+            color:white;
+
+
+        }
+
+
+
+
+
+        .txtool-input{
+
+
+            width:100%;
+
+            box-sizing:border-box;
+
+            margin-top:6px;
+
+            padding:8px;
+
+
+        }
+
+
+
+        `);
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * 注册油猴菜单
+     */
+    registerMenu(){
+
+
+
+        GM_registerMenuCommand(
+
+            "打开 Twitter Toolkit",
+
+            ()=>{
+
+                this.openPanel();
+
+            }
+
+        );
+
+
+
+
+        GM_registerMenuCommand(
+
+            "立即扫描评论",
+
+            ()=>{
+
+
+                this.scan();
+
+
+            }
+
+        );
+
+
+
+
+        GM_registerMenuCommand(
+
+            "清空历史记录",
+
+            ()=>{
+
+
+                Config.set(
+                    "history",
+                    []
+                );
+
+
+                alert(
+                    "历史已清空"
+                );
+
+
+            }
+
+        );
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * 创建悬浮按钮
+     */
+    createFloatingButton(){
+
+
+
+        const btn =
+            document.createElement(
+                "button"
+            );
+
+
+
+        btn.innerText =
+            "🛡️";
+
+
+
+        btn.style.cssText = `
+
+        position:fixed;
+
+        right:20px;
+
+        bottom:80px;
+
+        width:45px;
+
+        height:45px;
+
+        border-radius:50%;
+
+        border:none;
+
+        background:#1d9bf0;
+
+        color:white;
+
+        font-size:20px;
+
+        z-index:999999;
+
+        cursor:pointer;
+
+        `;
+
+
+
+        btn.onclick=()=>{
+
+            this.openPanel();
+
+        };
+
+
+
+        document.body.appendChild(
+            btn
+        );
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * 应用侧栏隐藏
+     *
+     * 根据配置隐藏右侧栏
+     * 并持续监听防止重新出现
+     */
+    applySidebar(){
+
+
+        if(
+            !Config.get(
+                "hideSidebar"
+            )
+        ){
+
+            return;
+
+        }
+
+
+
+
+        // 隐藏右侧栏
+
+        const sidebar =
+            document.querySelector(
+                '[data-testid="sidebarColumn"]'
+            );
+
+
+        if(sidebar){
+
+            sidebar.style.display =
+                "none";
+
+        }
+
+
+
+
+        // 隐藏趋势栏（可选）
+
+        const trends =
+            document.querySelector(
+                '[data-testid="trend"]'
+            );
+
+
+        if(trends){
+
+            trends.style.display =
+                "none";
+
+        }
+
+
+
+
+        // 主内容区占满宽度
+
+        const primary =
+            document.querySelector(
+                '[data-testid="primaryColumn"]'
+            );
+
+
+        if(primary){
+
+            primary.style.maxWidth =
+                "990px";
+
+        }
+
+
+
+
+        // 持续监听，
+        // X 是 SPA 动态加载
+
+        if(
+            !this._sidebarObserver
+        ){
+
+            this._sidebarObserver =
+                new MutationObserver(
+                    ()=>{
+
+                        this.applySidebar();
+
+                    }
+                );
+
+
+            this._sidebarObserver.observe(
+                document.body,
+                {
+                    childList:true,
+                    subtree:true
+                }
+            );
+
+        }
+
+
+    },
+
+
+
+
+    /**
+     * 打开面板
+     */
+    openPanel(){
+
+
+        const old =
+            document.querySelector(
+                ".txtool-panel"
+            );
+
+
+        if(old){
+
+
+            old.remove();
+
+            return;
+
+        }
+
+
+
+
+
+        const panel =
+            document.createElement(
+                "div"
+            );
+
+
+        panel.className =
+            "txtool-panel";
+
+
+
+        panel.innerHTML = `
+
+
+        <h3>
+        🛡️ Twitter X Toolkit
+        </h3>
+
+
+
+        <p>
+        本地规则评论管理
+        </p>
+
+
+
+        <label>
+
+        自动隐藏:
+
+        <input 
+        id="txt-auto"
+        type="checkbox"
+        >
+
+        </label>
+
+
+
+        <br><br>
+
+
+
+        <label>
+
+        自动拉黑:
+
+        <input 
+        id="txt-block"
+        type="checkbox"
+        >
+
+        </label>
+
+
+
+        <hr>
+
+
+
+        <b>
+        关键词
+        </b>
+
+
+        <textarea
+
+        id="txt-keywords"
+
+        class="txtool-input"
+
+        rows="5"
+
+        ></textarea>
+
+
+
+
+        <button
+
+        class="txtool-btn"
+
+        id="txt-save"
+
+        >
+
+        保存配置
+
+        </button>
+
+
+
+
+        <button
+
+        class="txtool-btn"
+
+        id="txt-scan"
+
+        >
+
+        扫描评论
+
+        </button>
+
+
+
+        <button
+
+        class="txtool-btn"
+
+        id="txt-history"
+
+        >
+
+        查看历史
+
+        </button>
+
+
+
+        `;
+
+
+
+
+
+        document.body.appendChild(
+            panel
+        );
+
+
+
+
+        this.bindEvents();
+
+        this.loadData();
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * 加载配置
+     */
+    loadData(){
+
+
+
+        document
+        .querySelector(
+            "#txt-auto"
+        )
+        .checked =
+        Config.get(
+            "hideSidebar"
+        );
+
+
+
+        document
+        .querySelector(
+            "#txt-block"
+        )
+        .checked =
+        Config.get(
+            "autoBlock"
+        );
+
+
+
+
+
+        document
+        .querySelector(
+            "#txt-keywords"
+        )
+        .value =
+
+        Config.get(
+            "blockKeywords"
+        )
+        .join("\n");
+
+
+    },
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * 绑定事件
+     */
+    bindEvents(){
+
+
+
+        document
+        .querySelector(
+            "#txt-save"
+        )
+        .onclick=()=>{
+
+
+
+            Config.set(
+
+                "hideSidebar",
+
+                document
+                .querySelector(
+                    "#txt-auto"
+                )
+                .checked
+
+            );
+
+
+
+            Config.set(
+
+                "autoBlock",
+
+                document
+                .querySelector(
+                    "#txt-block"
+                )
+                .checked
+
+            );
+
+
+
+
+            Config.set(
+
+                "blockKeywords",
+
+                document
+                .querySelector(
+                    "#txt-keywords"
+                )
+                .value
+
+                .split("\n")
+
+                .filter(Boolean)
+
+            );
+
+
+
+
+            // 立即应用侧栏隐藏
+
+            this.applySidebar();
+
+
+
+            alert(
+                "保存成功"
+            );
+
+
+        };
+
+
+
+
+
+
+
+        document
+        .querySelector(
+            "#txt-scan"
+        )
+        .onclick=()=>{
+
+
+            this.scan();
+
+
+        };
+
+
+
+
+
+
+
+
+        document
+        .querySelector(
+            "#txt-history"
+        )
+        .onclick=()=>{
+
+
+            alert(
+
+                JSON.stringify(
+
+                    Config.get(
+                        "history"
+                    ),
+
+                    null,
+
+                    2
+
+                )
+
+            );
+
+
+        };
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * 执行扫描
+     */
+    async scan(){
+
+
+        const tweets =
+
+            await CommentScanner
+            .scanWithScroll();
+
+
+
+        const matched =
+
+            Matcher.filter(
+                tweets
+            );
+
+
+
+        Blocker.executeAll(
+            matched
+        );
+
+
+        alert(
+
+            `处理完成:${matched.length}`
+
+        );
+
+
+    }
+
+
+
+};
+
+/**
+ * ==========================
+ * Main Module
+ * 主入口
+ * ==========================
+ */
+
+
+const Main = {
+
+
+
+    /**
+     * 初始化
+     */
+    init(){
+
+
+        log(
+            "Twitter X Toolkit starting..."
+        );
+
+
+
+        // 初始化 UI
+
+        UI.init();
+
+
+
+        // 页面检测
+
+        this.observe();
+
+
+
+        // 初始扫描
+
+        this.delayScan();
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * 延迟扫描
+     *
+     * 等待 X 页面加载
+     */
+    async delayScan(){
+
+
+
+        await sleep(
+            3000
+        );
+
+
+
+        this.scan();
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * 执行扫描
+     */
+    async scan(){
+
+
+
+        try{
+
+
+            const tweets =
+
+                await CommentScanner
+                .scanWithScroll();
+
+
+
+            const matched =
+
+                Matcher.filter(
+                    tweets
+                );
+
+
+
+            if(
+                matched.length
+                ===0
+            ){
+
+                log(
+                    "没有发现需要处理内容"
+                );
+
+
+                return;
+
+            }
+
+
+
+
+            Blocker.executeAll(
+                matched
+            );
+
+
+
+        }
+        catch(e){
+
+
+            console.error(
+                "scan error",
+                e
+            );
+
+
+        }
+
+
+    },
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * MutationObserver
+     *
+     * 监听 X 动态加载
+     */
+    observe(){
+
+
+
+        const observer =
+            new MutationObserver(
+                mutations=>{
+
+
+                    let needScan=false;
+
+
+
+                    for(
+                        const mutation
+                        of mutations
+                    ){
+
+
+                        if(
+                            mutation.addedNodes
+                            .length>0
+                        ){
+
+
+                            needScan=true;
+
+
+                            break;
+
+                        }
+
+
+                    }
+
+
+
+                    if(
+                        needScan
+                    ){
+
+
+                        this.autoScan();
+
+
+                    }
+
+
+
+                }
+            );
+
+
+
+
+
+
+
+        observer.observe(
+
+            document.body,
+
+            {
+
+                childList:true,
+
+                subtree:true
+
+            }
+
+        );
+
+
+
+        log(
+            "Observer started"
+        );
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * 自动扫描防抖
+     */
+    autoScan(){
+
+
+
+        clearTimeout(
+            this.timer
+        );
+
+
+
+        this.timer =
+            setTimeout(
+                ()=>{
+
+
+                    this.scan();
+
+
+                },
+
+                2500
+
+            );
+
+
+
+    },
+
+
+
+
+
+
+
+
+
+    /**
+     * SPA路由监听
+     *
+     * X不会刷新页面
+     */
+    hookRouter(){
+
+
+
+        const oldPush =
+            history.pushState;
+
+
+
+        history.pushState =
+        function(){
+
+
+            oldPush.apply(
+                this,
+                arguments
+            );
+
+
+            window.dispatchEvent(
+                new Event(
+                    "locationchange"
+                )
+            );
+
+
+        };
+
+
+
+
+
+        window.addEventListener(
+
+            "locationchange",
+
+            ()=>{
+
+
+                log(
+                    "route changed"
+                );
+
+
+                Main.delayScan();
+
+
+            }
+
+        );
+
+
+
+    }
+
+
+
+};
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================
+ * Start
+ * ==========================
+ */
+
+
+Main.hookRouter();
+
+
+
+if(
+    document.readyState
+    ===
+    "loading"
+){
+
+    document.addEventListener(
+
+        "DOMContentLoaded",
+
+        ()=>{
+
+            Main.init();
+
+        }
+
+    );
+
+
+}
+else{
+
+
+    Main.init();
+
+
+}
+
+
+
+})();
