@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         推特百宝箱 - X 评论盾牌
 // @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
-// @version      1.7.4
+// @version      1.8.0
 // @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
 // @author       liuGuanYi-hub
 // @match        https://twitter.com/*
@@ -2173,28 +2173,66 @@ const UI = {
                     "1";
 
 
-                const text =
-                    article.innerText
-                    ||
+                // 优先检测 X 官方广告徽标容器
+                // （socialContext 是推文上方的推广/赞助标记区）
+
+                const ctx =
+                    article.querySelector(
+                        '[data-testid="socialContext"]'
+                    );
+
+
+                const ctxText =
+                    ctx
+                    ?
+                    ctx.innerText
+                    :
                     "";
 
 
-                // 广告标记词
+                // 官方广告标记词（出现在徽标区才算广告）
 
                 const adMarkers = [
                     "Promoted",
                     "Sponsored",
-                    "推荐",
-                    "广告",
                     "推广",
-                    "赞助"
+                    "广告",
+                    "赞助",
+                    "推荐"
                 ];
 
 
-                const isAd =
+                let isAd =
+                    ctxText
+                    &&
                     adMarkers.some(
-                        m=>text.includes(m)
+                        m=>ctxText.includes(m)
                     );
+
+
+                // 兜底：无徽标区但正文强特征（仅命中精确短语，避免误伤）
+
+                if(
+                    !isAd
+                ){
+
+                    const text =
+                        article.innerText
+                        ||
+                        "";
+
+
+                    if(
+                        /^\s*(Promoted|Sponsored|推荐|推广)\s*$/i.test(
+                            text.split("\n")[0]
+                        )
+                    ){
+
+                        isAd = true;
+
+                    }
+
+                }
 
 
                 if(isAd){
@@ -2215,12 +2253,7 @@ const UI = {
             }
 
 
-        }
-
-
-
-
-        // 干扰区块移除
+        }        // 干扰区块移除
 
         if(
             Config.get(
@@ -2454,6 +2487,37 @@ const UI = {
 
         panel.className =
             "txtool-panel";
+
+
+
+
+        // 恢复上次拖拽位置
+
+        const savedPos =
+            Config.get(
+                "panelPosition"
+            );
+
+
+        if(
+            savedPos
+            &&
+            savedPos.left
+        ){
+
+            panel.style.left =
+                savedPos.left;
+
+            panel.style.top =
+                savedPos.top;
+
+            panel.style.right =
+                "auto";
+
+            panel.style.bottom =
+                "auto";
+
+        }
 
 
 
@@ -2812,6 +2876,21 @@ const UI = {
                 header.style.cursor = "grab";
 
                 header.releasePointerCapture(e.pointerId);
+
+
+
+
+                // 记忆面板位置，下次打开恢复
+
+                Config.set(
+                    "panelPosition",
+                    {
+                        left:
+                        panel.style.left,
+                        top:
+                        panel.style.top
+                    }
+                );
 
             };
 
