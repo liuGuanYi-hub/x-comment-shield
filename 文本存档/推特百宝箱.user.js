@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         推特百宝箱 - X 评论盾牌
 // @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
-// @version      1.3.0
+// @version      1.4.0
 // @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
 // @author       liuGuanYi-hub
 // @match        https://twitter.com/*
@@ -1289,7 +1289,6 @@ const UI = {
 
         GM_addStyle(`
 
-
         .txtool-panel{
 
 
@@ -1301,9 +1300,9 @@ const UI = {
 
             width:320px;
 
-            background:#111;
+            background:#ffffff;
 
-            color:#eee;
+            color:#14171a;
 
             border-radius:12px;
 
@@ -1313,8 +1312,10 @@ const UI = {
 
             font-size:14px;
 
+            border:1px solid rgba(0,0,0,0.08);
+
             box-shadow:
-            0 4px 20px rgba(0,0,0,.4);
+            0 4px 20px rgba(0,0,0,0.15);
 
 
         }
@@ -1347,11 +1348,22 @@ const UI = {
 
             background:#1d9bf0;
 
-            color:white;
+            color:#fff;
+
+            font-weight:500;
+
+            transition:background .15s;
 
 
         }
 
+
+
+        .txtool-btn:hover{
+
+            background:#1a8cd8;
+
+        }
 
 
 
@@ -1366,6 +1378,18 @@ const UI = {
             margin-top:6px;
 
             padding:8px;
+
+            border:1px solid #cfd9de;
+
+            border-radius:6px;
+
+            background:#f7f9f9;
+
+            color:#14171a;
+
+            font-size:13px;
+
+            resize:vertical;
 
 
         }
@@ -1405,7 +1429,7 @@ const UI = {
 
             border:none;
 
-            color:#aaa;
+            color:#536471;
 
             font-size:22px;
 
@@ -1413,11 +1437,14 @@ const UI = {
 
             cursor:pointer;
 
-            padding:0 6px;
+            padding:0 8px;
 
             line-height:1;
 
             border-radius:4px;
+
+            transition:background .15s;
+
 
         }
 
@@ -1426,15 +1453,13 @@ const UI = {
 
         .txtool-minimize:hover{
 
-            color:#fff;
+            color:#0f1419;
 
-            background:rgba(255,255,255,0.1);
+            background:rgba(0,0,0,0.06);
 
         }
 
-
-
-        `);
+`);
 
 
     },
