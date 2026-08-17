@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         推特百宝箱 - X 评论盾牌
 // @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
-// @version      1.6.1
+// @version      1.6.2
 // @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
 // @author       liuGuanYi-hub
 // @match        https://twitter.com/*
@@ -2432,6 +2432,147 @@ const UI = {
 
             this._floatBtn.style.transform =
                 "scale(0.6)";
+
+        }
+
+
+
+        // 面板标题栏可拖动
+
+        const header =
+            panel.querySelector(
+                ".txtool-header"
+            );
+
+
+        if(header){
+
+
+            let isDragging = false;
+
+            let hasMoved = false;
+
+            let startX = 0;
+
+            let startY = 0;
+
+            let startLeft = 0;
+
+            let startTop = 0;
+
+
+
+
+            header.addEventListener(
+                "pointerdown",
+                (e)=>{
+
+
+                    isDragging = true;
+
+                    hasMoved = false;
+
+                    startX = e.clientX;
+
+                    startY = e.clientY;
+
+                    startLeft = panel.offsetLeft;
+
+                    startTop = panel.offsetTop;
+
+                    header.setPointerCapture(e.pointerId);
+
+                    header.style.cursor = "grabbing";
+
+
+                }
+            );
+
+
+
+
+            header.addEventListener(
+                "pointermove",
+                (e)=>{
+
+
+                    if(!isDragging) return;
+
+
+
+
+                    const dx = e.clientX - startX;
+
+                    const dy = e.clientY - startY;
+
+
+
+
+                    if(Math.abs(dx) > 3 || Math.abs(dy) > 3){
+                        hasMoved = true;
+                    }
+
+
+
+
+                    let newLeft = startLeft + dx;
+
+                    let newTop = startTop + dy;
+
+
+
+
+                    const maxLeft = window.innerWidth - panel.offsetWidth;
+
+                    const maxTop = window.innerHeight - panel.offsetHeight;
+
+
+
+
+                    newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+
+                    newTop = Math.max(0, Math.min(newTop, maxTop));
+
+
+
+
+                    panel.style.left = newLeft + "px";
+
+                    panel.style.top = newTop + "px";
+
+                    panel.style.right = "auto";
+
+                    panel.style.bottom = "auto";
+
+
+                }
+            );
+
+
+
+
+            const endDrag = (e)=>{
+
+
+                if(!isDragging) return;
+
+                isDragging = false;
+
+                header.style.cursor = "grab";
+
+                header.releasePointerCapture(e.pointerId);
+
+            };
+
+
+
+
+            header.addEventListener("pointerup", endDrag);
+
+            header.addEventListener("pointercancel", endDrag);
+
+
+
 
         }
 
