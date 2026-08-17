@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Twitter X Toolkit Local
-// @namespace    https://github.com/yourname/twitter-x-toolkit
-// @version      1.0.0
-// @description  X(Twitter) 评论管理工具 - 本地规则版
-// @author       YourName
+// @name         推特百宝箱 - X 评论盾牌
+// @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
+// @version      1.1.0
+// @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
+// @author       liuGuanYi-hub
 // @match        https://twitter.com/*
 // @match        https://x.com/*
 // @grant        GM_getValue
@@ -473,28 +473,47 @@ const CommentScanner = {
         ){
 
 
-            const data =
-                this.scan();
+            try{
+
+
+                const data =
+                    this.scan();
 
 
 
-            all =
-                all.concat(
-                    data
+                all =
+                    all.concat(
+                        data
+                    );
+
+
+
+                window.scrollBy(
+                    0,
+                    window.innerHeight
                 );
 
 
 
-            window.scrollBy(
-                0,
-                window.innerHeight
-            );
+                await sleep(
+                    1500
+                );
 
 
+            }
+            catch(e){
 
-            await sleep(
-                1500
-            );
+
+                // 单轮异常不中断整体扫描
+
+                console.error(
+                    "scan round error",
+                    i,
+                    e
+                );
+
+
+            }
 
 
         }
@@ -1694,7 +1713,21 @@ const UI = {
                 new MutationObserver(
                     ()=>{
 
-                        this.applySidebar();
+
+                        try{
+
+                            this.applySidebar();
+
+                        }
+                        catch(e){
+
+                            console.error(
+                                "sidebar observer error",
+                                e
+                            );
+
+                        }
+
 
                     }
                 );
@@ -1862,6 +1895,20 @@ const UI = {
 
 
 
+        <button
+
+        class="txtool-btn"
+
+        id="txt-export"
+
+        >
+
+        导出历史
+
+        </button>
+
+
+
         `;
 
 
@@ -1975,6 +2022,57 @@ const UI = {
 
 
 
+
+            // autoBlock 二次确认：
+            // 防止误操作开启自动拉黑导致账号风控
+
+            const blockChecked =
+                document
+                .querySelector(
+                    "#txt-block"
+                )
+                .checked;
+
+
+            if(
+                blockChecked
+                &&
+                !Config.get(
+                    "autoBlock"
+                )
+            ){
+
+
+                const confirmed =
+                    confirm(
+                        "⚠️ 开启自动拉黑存在账号风控风险\n\n"
+                        +
+                        "确定要开启吗？"
+                    );
+
+
+                if(
+                    !confirmed
+                ){
+
+
+                    // 用户取消，回滚勾选状态
+
+                    document
+                    .querySelector(
+                        "#txt-block"
+                    )
+                    .checked =
+                    false;
+
+
+                }
+
+
+            }
+
+
+
             Config.set(
 
                 "autoBlock",
@@ -2068,6 +2166,98 @@ const UI = {
 
                 )
 
+            );
+
+
+        };
+
+
+
+
+        document
+        .querySelector(
+            "#txt-export"
+        )
+        .onclick=()=>{
+
+
+            const history =
+                Config.get(
+                    "history"
+                );
+
+
+            if(
+                history.length===0
+            ){
+
+                alert(
+                    "暂无历史记录"
+                );
+
+                return;
+
+            }
+
+
+
+
+            // 导出为 JSON 文件下载
+
+            const blob =
+                new Blob(
+                    [
+                        JSON.stringify(
+                            history,
+                            null,
+                            2
+                        )
+                    ],
+                    {
+                        type:
+                        "application/json"
+                    }
+                );
+
+
+            const url =
+                URL.createObjectURL(
+                    blob
+                );
+
+
+            const a =
+                document.createElement(
+                    "a"
+                );
+
+
+            a.href = url;
+
+
+            a.download =
+                "twitter-toolkit-history-"
+                +
+                Date.now()
+                +
+                ".json";
+
+
+            document.body.appendChild(
+                a
+            );
+
+
+            a.click();
+
+
+            document.body.removeChild(
+                a
+            );
+
+
+            URL.revokeObjectURL(
+                url
             );
 
 
@@ -2291,44 +2481,61 @@ const Main = {
                 mutations=>{
 
 
-                    let needScan=false;
+                    try{
+
+
+                        let needScan=false;
 
 
 
-                    for(
-                        const mutation
-                        of mutations
-                    ){
-
-
-                        if(
-                            mutation.addedNodes
-                            .length>0
+                        for(
+                            const mutation
+                            of mutations
                         ){
 
 
-                            needScan=true;
+                            if(
+                                mutation.addedNodes
+                                .length>0
+                            ){
 
 
-                            break;
+                                needScan=true;
+
+
+                                break;
+
+                            }
+
+
+                        }
+
+
+
+                        if(
+                            needScan
+                        ){
+
+
+                            this.autoScan();
+
 
                         }
 
 
                     }
+                    catch(e){
 
 
+                        // 回调异常不影响 Observer 运行
 
-                    if(
-                        needScan
-                    ){
-
-
-                        this.autoScan();
+                        console.error(
+                            "observer callback error",
+                            e
+                        );
 
 
                     }
-
 
 
                 }
