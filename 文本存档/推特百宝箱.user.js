@@ -32,8 +32,8 @@ const DEFAULT_CONFIG = {
     autoBlock: false,
 
 
-    // 隐藏右侧栏
-    hideSidebar: true,
+    // 隐藏右侧栏（可选，默认不隐藏）
+    hideSidebar: false,
 
 
     // 扫描次数
@@ -2030,7 +2030,7 @@ const UI = {
 
         <label>
 
-        自动隐藏:
+        隐藏右侧栏:
 
         <input 
         id="txt-auto"
