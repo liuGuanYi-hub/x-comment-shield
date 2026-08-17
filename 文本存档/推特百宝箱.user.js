@@ -455,108 +455,12 @@ const CommentScanner = {
      */
     async scanWithScroll(){
 
+        // 不再自动滚动页面，
+        // 避免干扰用户阅读。
+        // 用户手动滚动时，
+        // MutationObserver 会触发清理新加载评论。
 
-
-        let all=[];
-
-
-
-        const times =
-            Config.get(
-                "scanTimes"
-            );
-
-
-
-        for(
-            let i=0;
-            i<times;
-            i++
-        ){
-
-
-            try{
-
-
-                const data =
-                    this.scan();
-
-
-
-                all =
-                    all.concat(
-                        data
-                    );
-
-
-
-                window.scrollBy(
-                    0,
-                    window.innerHeight
-                );
-
-
-
-                await sleep(
-                    1500
-                );
-
-
-            }
-            catch(e){
-
-
-                // 单轮异常不中断整体扫描
-
-                console.error(
-                    "scan round error",
-                    i,
-                    e
-                );
-
-
-            }
-
-
-        }
-
-
-
-        // 去重
-
-
-        const map =
-            new Map();
-
-
-
-        for(
-            const item of all
-        ){
-
-
-            const key =
-                item.username
-                +
-                item.text;
-
-
-
-            map.set(
-                key,
-                item
-            );
-
-
-        }
-
-
-
-        return Array.from(
-            map.values()
-        );
-
-
+        return this.scan();
 
     }
 
