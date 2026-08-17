@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         推特百宝箱 - X 评论盾牌
 // @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
-// @version      1.4.2
+// @version      1.5.0
 // @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
 // @author       liuGuanYi-hub
 // @match        https://twitter.com/*
@@ -36,6 +36,10 @@ const DEFAULT_CONFIG = {
 
     // 隐藏右侧栏（可选，默认不隐藏）
     hideSidebar: false,
+
+
+    // 折叠左侧栏（可选，默认不折叠）
+    collapseLeftSidebar: false,
 
 
     // 扫描次数
@@ -1274,6 +1278,12 @@ const UI = {
         this.applySidebar();
 
 
+
+        // 应用左侧栏折叠
+
+        this.applyLeftSidebar();
+
+
     },
 
 
@@ -1957,6 +1967,106 @@ const UI = {
 
 
 
+
+    /**
+     * 应用左侧栏折叠
+     *
+     * 根据配置折叠左侧导航栏
+     */
+    applyLeftSidebar(){
+
+
+        if(
+            !Config.get(
+                "collapseLeftSidebar"
+            )
+        ){
+
+            return;
+
+        }
+
+
+
+
+        // 隐藏左侧导航栏
+
+        const leftNav =
+            document.querySelector(
+                'header[role="banner"]'
+            );
+
+
+        if(leftNav){
+
+            leftNav.style.display =
+                "none";
+
+        }
+
+
+
+
+        // 主内容区居中占满
+
+        const primary =
+            document.querySelector(
+                '[data-testid="primaryColumn"]'
+            );
+
+
+        if(primary){
+
+            primary.style.maxWidth =
+                "990px";
+
+            primary.style.marginLeft =
+                "auto";
+
+            primary.style.marginRight =
+                "auto";
+
+        }
+
+
+
+
+        // 持续监听，
+        // X 是 SPA 动态加载
+
+        if(
+            !this._leftNavObserver
+        ){
+
+            this._leftNavObserver =
+                new MutationObserver(
+                    ()=>{
+
+                        this.applyLeftSidebar();
+
+                    }
+                );
+
+
+            this._leftNavObserver.observe(
+                document.body,
+                {
+                    childList:true,
+                    subtree:true
+                }
+            );
+
+        }
+
+
+    },
+
+
+
+
+
+
+
     /**
      * 关闭面板
      *
@@ -2082,6 +2192,19 @@ const UI = {
 
         <input 
         id="txt-auto"
+        type="checkbox"
+        >
+
+        </label>
+
+
+
+        <label>
+
+        折叠左侧栏:
+
+        <input 
+        id="txt-left"
         type="checkbox"
         >
 
@@ -2257,6 +2380,18 @@ const UI = {
 
 
 
+        document
+        .querySelector(
+            "#txt-left"
+        )
+        .checked =
+        Config.get(
+            "collapseLeftSidebar"
+        );
+
+
+
+
 
         document
         .querySelector(
@@ -2394,6 +2529,21 @@ const UI = {
 
             Config.set(
 
+                "collapseLeftSidebar",
+
+                document
+                .querySelector(
+                    "#txt-left"
+                )
+                .checked
+
+            );
+
+
+
+
+            Config.set(
+
                 "blockKeywords",
 
                 document
@@ -2414,6 +2564,12 @@ const UI = {
             // 立即应用侧栏隐藏
 
             this.applySidebar();
+
+
+
+            // 立即应用左侧栏折叠
+
+            this.applyLeftSidebar();
 
 
 
