@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         推特百宝箱 - X 评论盾牌
 // @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
-// @version      1.7.1
+// @version      1.7.2
 // @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
 // @author       liuGuanYi-hub
 // @match        https://twitter.com/*
@@ -959,10 +959,10 @@ const Blocker = {
 
 
     /**
-     * 添加隐藏提示
+     * 直接隐藏评论
+     * （不显示占位块，从页面彻底消失）
      */
     replace(tweet,reason){
-
 
 
         if(
@@ -976,49 +976,8 @@ const Blocker = {
 
 
 
-        const div =
-            document.createElement(
-                "div"
-            );
-
-
-
-        div.innerHTML = `
-
-            <div
-            style="
-            padding:12px;
-            margin:8px;
-            border-radius:8px;
-            background:#222;
-            color:#aaa;
-            font-size:14px;
-            "
-            >
-
-            🚫 已隐藏评论
-
-            <br>
-
-            用户:
-            @${tweet.username}
-
-            <br>
-
-            原因:
-            ${reason.type}
-
-            (${reason.value})
-
-            </div>
-
-        `;
-
-
-
-        tweet.element.replaceWith(
-            div
-        );
+        tweet.element.style.display =
+            "none";
 
 
     },
