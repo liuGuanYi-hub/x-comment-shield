@@ -10,8 +10,8 @@
 // @grant        GM_setValue
 // @grant        GM_addStyle
 // @grant        GM_registerMenuCommand
-// @updateURL    https://raw.githubusercontent.com/liuGuanYi-hub/x-comment-shield/main/%E6%8E%A8%E7%89%B9%E7%99%BE%E5%AE%9D%E7%AE%B1.user.js
-// @downloadURL  https://raw.githubusercontent.com/liuGuanYi-hub/x-comment-shield/main/%E6%8E%A8%E7%89%B9%E7%99%BE%E5%AE%9D%E7%AE%B1.user.js
+// @updateURL    https://raw.githubusercontent.com/liuGuanYi-hub/x-comment-shield/main/x-comment-shield.user.js
+// @downloadURL  https://raw.githubusercontent.com/liuGuanYi-hub/x-comment-shield/main/x-comment-shield.user.js
 // ==/UserScript==
 
 (function () {
