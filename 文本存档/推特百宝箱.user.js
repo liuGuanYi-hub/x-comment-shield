@@ -1597,17 +1597,224 @@ const UI = {
 
         z-index:999999;
 
-        cursor:pointer;
+        cursor:grab;
+
+        user-select:none;
+
+        touch-action:none;
 
         `;
 
 
 
-        btn.onclick=()=>{
 
-            this.openPanel();
+        // ===== 拖拽逻辑 =====
 
-        };
+        let isDragging = false;
+
+        let hasMoved = false;
+
+        let startX = 0;
+
+        let startY = 0;
+
+        let startLeft = 0;
+
+        let startTop = 0;
+
+
+
+
+        btn.addEventListener(
+            "pointerdown",
+            (e)=>{
+
+                isDragging = true;
+
+                hasMoved = false;
+
+                startX = e.clientX;
+
+                startY = e.clientY;
+
+                startLeft = btn.offsetLeft;
+
+                startTop = btn.offsetTop;
+
+                btn.setPointerCapture(
+                    e.pointerId
+                );
+
+                btn.style.cursor = "grabbing";
+
+            }
+        );
+
+
+
+
+        btn.addEventListener(
+            "pointermove",
+            (e)=>{
+
+                if(
+                    !isDragging
+                ){
+
+                    return;
+
+                }
+
+
+
+
+                const dx =
+                    e.clientX - startX;
+
+                const dy =
+                    e.clientY - startY;
+
+
+
+
+                // 判断是否真的拖动了
+
+                if(
+                    Math.abs(dx) > 3
+                    ||
+                    Math.abs(dy) > 3
+                ){
+
+                    hasMoved = true;
+
+                }
+
+
+
+
+                let newLeft =
+                    startLeft + dx;
+
+                let newTop =
+                    startTop + dy;
+
+
+
+
+                // 限制不拖出屏幕
+
+                const maxLeft =
+                    window.innerWidth
+                    - btn.offsetWidth;
+
+                const maxTop =
+                    window.innerHeight
+                    - btn.offsetHeight;
+
+
+
+
+                newLeft =
+                    Math.max(
+                        0,
+                        Math.min(
+                            newLeft,
+                            maxLeft
+                        )
+                    );
+
+                newTop =
+                    Math.max(
+                        0,
+                        Math.min(
+                            newTop,
+                            maxTop
+                        )
+                    );
+
+
+
+
+                btn.style.left =
+                    newLeft + "px";
+
+                btn.style.top =
+                    newTop + "px";
+
+                btn.style.right =
+                    "auto";
+
+                btn.style.bottom =
+                    "auto";
+
+            }
+        );
+
+
+
+
+        const endDrag =
+            (e)=>{
+
+                if(
+                    !isDragging
+                ){
+
+                    return;
+
+                }
+
+                isDragging = false;
+
+                btn.style.cursor = "grab";
+
+                btn.releasePointerCapture(
+                    e.pointerId
+                );
+
+            };
+
+
+
+
+        btn.addEventListener(
+            "pointerup",
+            endDrag
+        );
+
+
+
+
+        btn.addEventListener(
+            "pointercancel",
+            endDrag
+        );
+
+
+
+
+        // 点击打开面板，
+        // 拖动过则不触发
+
+        btn.addEventListener(
+            "click",
+            (e)=>{
+
+                if(
+                    hasMoved
+                ){
+
+                    e.stopPropagation();
+
+                    return;
+
+                }
+
+                this.openPanel();
+
+            }
+        );
+
 
 
 
