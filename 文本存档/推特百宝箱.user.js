@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         推特百宝箱 - X 评论盾牌
 // @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
-// @version      1.5.0
+// @version      1.5.1
 // @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
 // @author       liuGuanYi-hub
 // @match        https://twitter.com/*
@@ -1912,8 +1912,43 @@ const UI = {
 
         if(primary){
 
-            primary.style.maxWidth =
-                "990px";
+
+            // 强制覆盖 X 内联样式，让主内容居中
+
+            primary.style.setProperty(
+                "width",
+                "990px",
+                "important"
+            );
+
+
+            primary.style.setProperty(
+                "flex-basis",
+                "990px",
+                "important"
+            );
+
+
+            primary.style.setProperty(
+                "flex-grow",
+                "0",
+                "important"
+            );
+
+
+            primary.style.setProperty(
+                "margin-left",
+                "auto",
+                "important"
+            );
+
+
+            primary.style.setProperty(
+                "margin-right",
+                "auto",
+                "important"
+            );
+
 
         }
 
@@ -2017,14 +2052,51 @@ const UI = {
 
         if(primary){
 
-            primary.style.maxWidth =
-                "990px";
 
-            primary.style.marginLeft =
-                "auto";
+            // 用 !important 强制覆盖 X 的内联样式，
+            // 让主内容在 flex 中固定宽度并居中
 
-            primary.style.marginRight =
-                "auto";
+            primary.style.setProperty(
+                "width",
+                "990px",
+                "important"
+            );
+
+
+            primary.style.setProperty(
+                "flex-basis",
+                "990px",
+                "important"
+            );
+
+
+            primary.style.setProperty(
+                "flex-grow",
+                "0",
+                "important"
+            );
+
+
+            primary.style.setProperty(
+                "flex-shrink",
+                "0",
+                "important"
+            );
+
+
+            primary.style.setProperty(
+                "margin-left",
+                "auto",
+                "important"
+            );
+
+
+            primary.style.setProperty(
+                "margin-right",
+                "auto",
+                "important"
+            );
+
 
         }
 
