@@ -1603,6 +1603,8 @@ const UI = {
 
         touch-action:none;
 
+        transition:transform .2s ease;
+
         `;
 
 
@@ -1818,6 +1820,12 @@ const UI = {
 
 
 
+        // 保存按钮引用，供面板开关时缩放
+
+        this._floatBtn = btn;
+
+
+
         document.body.appendChild(
             btn
         );
@@ -1973,6 +1981,19 @@ const UI = {
 
             old.remove();
 
+
+            // 面板关闭，盾牌恢复原大小
+
+            if(
+                this._floatBtn
+            ){
+
+                this._floatBtn.style.transform =
+                    "scale(1)";
+
+            }
+
+
             return;
 
         }
@@ -2126,6 +2147,19 @@ const UI = {
             panel
         );
 
+
+
+
+        // 面板打开，盾牌缩小
+
+        if(
+            this._floatBtn
+        ){
+
+            this._floatBtn.style.transform =
+                "scale(0.6)";
+
+        }
 
 
 
