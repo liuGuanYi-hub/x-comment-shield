@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         推特百宝箱 - X 评论盾牌
 // @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
-// @version      1.8.0
+// @version      1.8.1
 // @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
 // @author       liuGuanYi-hub
 // @match        https://twitter.com/*
@@ -1821,37 +1821,43 @@ const UI = {
     /**
      * 应用侧栏隐藏
      *
-     * 根据配置隐藏右侧栏
+     * 根据配置隐藏右侧栏（保持占位空白，不位移中间主内容）
      * 并持续监听防止重新出现
      */
     applySidebar(){
 
-
-        if(
-            !Config.get(
+        const hide =
+            Config.get(
                 "hideSidebar"
-            )
-        ){
-
-            return;
-
-        }
-
-
-
-
-        // 隐藏右侧栏
+            );
 
         const sidebar =
             document.querySelector(
                 '[data-testid="sidebarColumn"]'
             );
 
-
         if(sidebar){
 
-            sidebar.style.display =
-                "none";
+            if(hide){
+
+                sidebar.style.visibility =
+                    "hidden";
+
+                sidebar.style.pointerEvents =
+                    "none";
+
+            } else {
+
+                sidebar.style.visibility =
+                    "";
+
+                sidebar.style.pointerEvents =
+                    "";
+
+                sidebar.style.display =
+                    "";
+
+            }
 
         }
 
@@ -1868,75 +1874,76 @@ const UI = {
 
         if(trends){
 
-            trends.style.display =
-                "none";
+            if(hide){
+
+                trends.style.visibility =
+                    "hidden";
+
+                trends.style.pointerEvents =
+                    "none";
+
+            } else {
+
+                trends.style.visibility =
+                    "";
+
+                trends.style.pointerEvents =
+                    "";
+
+                trends.style.display =
+                    "";
+
+            }
 
         }
 
 
 
 
-        // 主内容区占满宽度
+        // 若未开启折叠左侧栏，确保主内容区保持原生样式，不产生位移与留白
 
-        const primary =
-            document.querySelector(
-                '[data-testid="primaryColumn"]'
-            );
+        if(
+            !Config.get(
+                "collapseLeftSidebar"
+            )
+        ){
 
+            const primary =
+                document.querySelector(
+                    '[data-testid="primaryColumn"]'
+                );
 
-        if(primary){
+            if(primary){
 
+                primary.style.removeProperty(
+                    "width"
+                );
 
-            // 强制覆盖 X 内联样式，让主内容居中
+                primary.style.removeProperty(
+                    "flex-basis"
+                );
 
-            primary.style.setProperty(
-                "width",
-                "990px",
-                "important"
-            );
+                primary.style.removeProperty(
+                    "flex-grow"
+                );
 
+                primary.style.removeProperty(
+                    "flex-shrink"
+                );
 
-            primary.style.setProperty(
-                "flex-basis",
-                "990px",
-                "important"
-            );
+                primary.style.removeProperty(
+                    "margin-left"
+                );
 
+                primary.style.removeProperty(
+                    "margin-right"
+                );
 
-            primary.style.setProperty(
-                "flex-grow",
-                "0",
-                "important"
-            );
+                primary.style.removeProperty(
+                    "transform"
+                );
 
-
-            primary.style.setProperty(
-                "margin-left",
-                "auto",
-                "important"
-            );
-
-
-            primary.style.setProperty(
-                "margin-right",
-                "auto",
-                "important"
-            );
-
-
-
-
-            primary.style.setProperty(
-                "transform",
-                "translateX(calc(5vw + 140px))",
-                "important"
-            );
-
-
-
-
-        
-
+            }
 
         }
 
@@ -1998,21 +2005,13 @@ const UI = {
      */
     applyLeftSidebar(){
 
-
-        if(
-            !Config.get(
+        const collapse =
+            Config.get(
                 "collapseLeftSidebar"
-            )
-        ){
-
-            return;
-
-        }
+            );
 
 
-
-
-        // 隐藏左侧导航栏
+        // 隐藏/恢复左侧导航栏
 
         const leftNav =
             document.querySelector(
@@ -2022,15 +2021,22 @@ const UI = {
 
         if(leftNav){
 
-            leftNav.style.display =
-                "none";
+            if(collapse){
+
+                leftNav.style.display =
+                    "none";
+
+            } else {
+
+                leftNav.style.display =
+                    "";
+
+            }
 
         }
 
 
 
-
-        // 主内容区居中占满
 
         const primary =
             document.querySelector(
@@ -2040,62 +2046,92 @@ const UI = {
 
         if(primary){
 
+            if(collapse){
 
-            // 用 !important 强制覆盖 X 的内联样式，
-            // 让主内容在 flex 中固定宽度并居中
+                // 用 !important 强制覆盖 X 的内联样式，
+                // 让主内容在 flex 中固定宽度并居中
 
-            primary.style.setProperty(
-                "width",
-                "990px",
-                "important"
-            );
-
-
-            primary.style.setProperty(
-                "flex-basis",
-                "990px",
-                "important"
-            );
+                primary.style.setProperty(
+                    "width",
+                    "990px",
+                    "important"
+                );
 
 
-            primary.style.setProperty(
-                "flex-grow",
-                "0",
-                "important"
-            );
+                primary.style.setProperty(
+                    "flex-basis",
+                    "990px",
+                    "important"
+                );
 
 
-            primary.style.setProperty(
-                "flex-shrink",
-                "0",
-                "important"
-            );
+                primary.style.setProperty(
+                    "flex-grow",
+                    "0",
+                    "important"
+                );
 
 
-            primary.style.setProperty(
-                "margin-left",
-                "auto",
-                "important"
-            );
+                primary.style.setProperty(
+                    "flex-shrink",
+                    "0",
+                    "important"
+                );
 
 
-            primary.style.setProperty(
-                "margin-right",
-                "auto",
-                "important"
-            );
+                primary.style.setProperty(
+                    "margin-left",
+                    "auto",
+                    "important"
+                );
 
 
-
-
-            primary.style.setProperty(
-                "transform",
-                "translateX(calc(5vw + 140px))",
-                "important"
-            );
+                primary.style.setProperty(
+                    "margin-right",
+                    "auto",
+                    "important"
+                );
 
 
 
+
+                primary.style.setProperty(
+                    "transform",
+                    "translateX(calc(5vw + 140px))",
+                    "important"
+                );
+
+            } else {
+
+                primary.style.removeProperty(
+                    "width"
+                );
+
+                primary.style.removeProperty(
+                    "flex-basis"
+                );
+
+                primary.style.removeProperty(
+                    "flex-grow"
+                );
+
+                primary.style.removeProperty(
+                    "flex-shrink"
+                );
+
+                primary.style.removeProperty(
+                    "margin-left"
+                );
+
+                primary.style.removeProperty(
+                    "margin-right"
+                );
+
+                primary.style.removeProperty(
+                    "transform"
+                );
+
+            }
 
         }
 
