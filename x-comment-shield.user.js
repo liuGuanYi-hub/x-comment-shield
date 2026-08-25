@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         推特百宝箱 - X 评论盾牌
 // @namespace    https://github.com/liuGuanYi-hub/x-comment-shield
-// @version      1.8.1
+// @version      1.8.2
 // @description  X(Twitter) 评论管理工具：自动扫描并隐藏广告、抽奖等无用评论，支持关键词/用户/正则黑名单、历史记录管理，可一键隐藏右侧栏。数据仅保存在本地。
 // @author       liuGuanYi-hub
 // @match        https://twitter.com/*
@@ -1821,7 +1821,7 @@ const UI = {
     /**
      * 应用侧栏隐藏
      *
-     * 根据配置隐藏右侧栏（保持占位空白，不位移中间主内容）
+     * 根据配置隐藏右侧栏并适度加宽主内容区（避免右侧过多留白，同时保持主内容左靠导航栏）
      * 并持续监听防止重新出现
      */
     applySidebar(){
@@ -1829,6 +1829,11 @@ const UI = {
         const hide =
             Config.get(
                 "hideSidebar"
+            );
+
+        const collapseLeft =
+            Config.get(
+                "collapseLeftSidebar"
             );
 
         const sidebar =
@@ -1840,21 +1845,18 @@ const UI = {
 
             if(hide){
 
-                sidebar.style.visibility =
-                    "hidden";
-
-                sidebar.style.pointerEvents =
+                sidebar.style.display =
                     "none";
 
             } else {
 
+                sidebar.style.display =
+                    "";
+
                 sidebar.style.visibility =
                     "";
 
                 sidebar.style.pointerEvents =
-                    "";
-
-                sidebar.style.display =
                     "";
 
             }
@@ -1876,21 +1878,18 @@ const UI = {
 
             if(hide){
 
-                trends.style.visibility =
-                    "hidden";
-
-                trends.style.pointerEvents =
+                trends.style.display =
                     "none";
 
             } else {
 
+                trends.style.display =
+                    "";
+
                 trends.style.visibility =
                     "";
 
                 trends.style.pointerEvents =
-                    "";
-
-                trends.style.display =
                     "";
 
             }
@@ -1900,23 +1899,68 @@ const UI = {
 
 
 
-        // 若未开启折叠左侧栏，确保主内容区保持原生样式，不产生位移与留白
+        // 主内容区处理：当仅隐藏右侧栏时，适度加宽至 800px，不位移、不居中
 
-        if(
-            !Config.get(
-                "collapseLeftSidebar"
-            )
-        ){
+        const primary =
+            document.querySelector(
+                '[data-testid="primaryColumn"]'
+            );
 
-            const primary =
-                document.querySelector(
-                    '[data-testid="primaryColumn"]'
+
+        if(primary){
+
+            if(hide && !collapseLeft){
+
+                // 仅隐藏右侧栏：适度加宽，消除过大空白，保持正常左侧贴靠
+
+                primary.style.setProperty(
+                    "width",
+                    "800px",
+                    "important"
                 );
 
-            if(primary){
+                primary.style.setProperty(
+                    "max-width",
+                    "800px",
+                    "important"
+                );
+
+                primary.style.setProperty(
+                    "flex-basis",
+                    "800px",
+                    "important"
+                );
+
+                primary.style.removeProperty(
+                    "flex-grow"
+                );
+
+                primary.style.removeProperty(
+                    "flex-shrink"
+                );
+
+                primary.style.removeProperty(
+                    "margin-left"
+                );
+
+                primary.style.removeProperty(
+                    "margin-right"
+                );
+
+                primary.style.removeProperty(
+                    "transform"
+                );
+
+            } else if(!hide && !collapseLeft){
+
+                // 恢复原生状态
 
                 primary.style.removeProperty(
                     "width"
+                );
+
+                primary.style.removeProperty(
+                    "max-width"
                 );
 
                 primary.style.removeProperty(
